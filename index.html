@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+
+<title>ASCII Icon</title>
+
+<meta charset="utf-8"></meta>
+
+<style>
+    #icontext {
+        width: 350px;
+        height: 600px;
+        border: 1px solid black;
+        padding: 2px;
+        border-radius: 5px;
+    }
+    #icon {
+        width: 300px;
+        height: 300px;
+        border: 1px solid black;
+        padding: 2px;
+        border-radius: 5px;
+    }
+    td {
+        vertical-align: top;
+    }
+</style>
+
+<header>
+    <h1>ASCII Icon</h1>
+</header>
+
+<article>
+    <table>
+        <tr>
+            <td>
+                <textarea id="icontext">
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . : . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . : . . . . : . . . . : . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . : . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . .
+                </textarea>
+            </td>
+            <td>
+                <canvas id="icon" width="300" height="300">
+                </canvas>
+                <br/>
+                <table>
+                    <tr>
+                        <td><label for="iconTop">Top</label></td>
+                        <td><input id="iconTop" type="text" value="10" size="5"></td>
+                    </tr><tr>
+                        <td><label for="iconLeft">Left</label></td>
+                        <td><input id="iconLeft" type="text" value="10" size="5"></td>
+                    </tr><tr>
+                        <td><label for="iconWidth">Width</label></td>
+                        <td><input id="iconWidth" type="text" value="200" size="5"></td>
+                    </tr><tr>
+                        <td><label for="iconHeight">Height</label></td>
+                        <td><input id="iconHeight" type="text" value="200" size="5"></td>
+                    </tr><tr>
+                        <td colspan="3">
+                            <input type="button" onclick="drawicon()" value="Render">
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</article>
+
+<script src="ascii-icon.js"></script>
+
+<script>
+function drawicon() {
+    var canvas = document.getElementById('icon');
+    var ctx = canvas.getContext('2d');    
+
+    ctx.clearRect( 0, 0, canvas.width, canvas.height )
+
+    var text = document.getElementById('icontext').value;
+    // console.log( text);
+    ctx.drawIcon( text, {
+        left:     Number( document.getElementById('iconLeft').value ), 
+        top:      Number( document.getElementById('iconTop').value ), 
+        width:    Number( document.getElementById('iconWidth').value ), 
+        height:   Number( document.getElementById('iconHeight').value ), 
+        grid:     true,
+        segments: true,
+    } )
+}
+</script>
