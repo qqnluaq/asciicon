@@ -72,6 +72,12 @@
                         <td><label for="iconHeight">Height</label></td>
                         <td><input id="iconHeight" type="text" value="200" size="5"></td>
                     </tr><tr>
+                        <td><label for="debugGrid">Grid</label></td>
+                        <td><input id="debugGrid" type="checkbox"></td>
+                    </tr><tr>
+                        <td><label for="debugSegments">Segments</label></td>
+                        <td><input id="debugSegments" type="checkbox"></td>
+                    </tr><tr>
                         <td colspan="3">
                             <input type="button" onclick="drawicon()" value="Render">
                         </td>
@@ -98,8 +104,8 @@ function drawicon() {
         top:      Number( document.getElementById('iconTop').value ), 
         width:    Number( document.getElementById('iconWidth').value ), 
         height:   Number( document.getElementById('iconHeight').value ), 
-        grid:     true,
-        segments: true,
+        grid:     document.getElementById('debugGrid').checked,
+        segments: document.getElementById('debugSegments').checked,
     } )
 }
 </script>

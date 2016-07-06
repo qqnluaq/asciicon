@@ -146,13 +146,16 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         this.styleMethod[ path.style || 'default' ].call( this, styleContext )
 
         for ( var s = 0; s < path.segments.length; s++ ) {
-            var segment = path.segments[ s ];
+            var seg = path.segments[ s ];
 
-            this.segmentMethod[ segment.method ].call( this, transform( segment.vertices, cellCenter ) );
+            this.segmentMethod[ seg.method ].call( this, transform( seg.vertices, cellCenter ) );
         }
 
         this.pathMethod[ path.method ].call( this )
     }
+
+    if ( debugSegments )
+        drawSegments( this, segment )
 
     this.restore();
 
@@ -194,6 +197,17 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         var vs = transform( [ c, r, c + w, r + h ], [ 0, 0 ] );
         ctx.fillStyle = 'darkgray';
         ctx.fillRect( vs[ 0 ], vs[ 1 ], vs[ 2 ] - vs[ 0 ], vs[ 3 ] - vs[ 1 ] );
+    }
+
+    function drawSegments( ctx, segment ) {
+        for ( var sid in segment ) {
+            var s = segment[ sid ];
+
+            ctx.beginPath();
+            ctx.styleMethod.debugSegments.call( ctx )
+            ctx.segmentMethod[ s.method ].call( ctx, transform( s.vertices, cellCenter ) );            
+            ctx.stroke();
+        }
     }
 
     function parseSegment( i, line, segmentMethod ) {
@@ -307,9 +321,16 @@ CanvasRenderingContext2D.prototype.pathMethod = {
 
 ( function () {
     CanvasRenderingContext2D.prototype.styleMethod = {
+        default: colourStyle( 'black' ),
         black: colourStyle( 'black' ),
         white: colourStyle( 'white' ),
         gray:  colourStyle( 'gray' ),
+        red:  colourStyle( 'red' ),
+        debugSegments: function () {
+            this.lineWidth = 2;
+            this.setLineDash( [ 2, 2 ] );
+            this.strokeStyle = 'black';
+        }
     };
 
     function colourStyle( colour ) {
