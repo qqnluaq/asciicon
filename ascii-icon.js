@@ -59,9 +59,8 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
 
 
     for ( ; i < lines.length; i++ ) {
-        points = lines[ i ].trim().split( /\s+/ );
-        if ( points.length == 1 && !points[ 0 ] ) {
-            rows = i;
+        var points = lines[ i ].trim().split( /\s*/ );
+        if ( points.length == 0 || (points.length == 1 && !points[ 0 ]) ) {
             break;
         }
 
@@ -87,6 +86,7 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
             }
         }
     }
+    rows = i;
 
     if ( !width ) width = cols;
     if ( !height ) height = rows;
@@ -203,10 +203,12 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         for ( var sid in segment ) {
             var s = segment[ sid ];
 
-            ctx.beginPath();
-            ctx.styleMethod.debugSegments.call( ctx )
-            ctx.segmentMethod[ s.method ].call( ctx, transform( s.vertices, cellCenter ) );            
-            ctx.stroke();
+            for ( var l = 0; l < 2; l++ ) {
+                ctx.beginPath();
+                ctx.styleMethod.debugSegments.call( ctx, l )
+                ctx.segmentMethod[ s.method ].call( ctx, transform( s.vertices, cellCenter ) );            
+                ctx.stroke();
+            }
         }
     }
 
@@ -326,10 +328,18 @@ CanvasRenderingContext2D.prototype.pathMethod = {
         white: colourStyle( 'white' ),
         gray:  colourStyle( 'gray' ),
         red:  colourStyle( 'red' ),
-        debugSegments: function () {
+        debugSegments: function ( layer ) {
             this.lineWidth = 2;
-            this.setLineDash( [ 2, 2 ] );
-            this.strokeStyle = 'black';
+            this.lineCap = 'butt';
+            this.lineJoin = 'bevel';
+            if ( layer == 0 ) {
+                this.setLineDash( [] );
+                this.strokeStyle = 'white';
+            }
+            else if ( layer == 1 ) {
+                this.setLineDash( [ 4, 4 ] );
+                this.strokeStyle = 'black';
+            }
         }
     };
 

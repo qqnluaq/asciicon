@@ -1,65 +1,43 @@
 <!DOCTYPE html>
 
-<title>ASCII Icon</title>
+<title>ASCIIcon</title>
 
 <meta charset="utf-8"></meta>
-
-<style>
-    #icontext {
-        width: 350px;
-        height: 600px;
-        border: 1px solid black;
-        padding: 2px;
-        border-radius: 5px;
-    }
-    #icon {
-        width: 300px;
-        height: 300px;
-        border: 1px solid black;
-        padding: 2px;
-        border-radius: 5px;
-    }
-    td {
-        vertical-align: top;
-    }
-</style>
+<link type="text/css" href="default.css" rel="stylesheet"></link> 
 
 <header>
-    <h1>ASCII Icon</h1>
+    <h1>ASCIIcon</h1>
 </header>
 
 <article>
-    <table>
+    <table width="1%">
         <tr>
-            <td>
-                <textarea id="icontext">
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . : . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . : . . . . : . . . . : . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . : . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . .
-                </textarea>
+            <td width="1%">
+                <div id="paper">
+                    <textarea id="vertices"></textarea>
+                    <textarea id="segments"></textarea>
+                </div>
             </td>
-            <td>
-                <canvas id="icon" width="300" height="300">
-                </canvas>
-                <br/>
+            <td width="1%">
+                <div id="iconFrame">
+                    <canvas id="icon" width="300" height="300"></canvas>
+                </div>
                 <table>
                     <tr>
+                        <td><label for="gridSize">Size</label></td>
+                        <td>
+                        <select id="gridSize" onchange="changeSize()">
+                             <option value="9,5">9 x 9</option>
+                             <option value="11,3">11 x 11</option>
+                             <option value="15,4">15 x 15</option>
+                             <option value="19,5">19 x 19</option>
+                             <option value="23,4">23 x 23</option>
+                        <select>
+                        </td>
+                        <td colspan="3">
+                            <input type="button" onclick="drawicon()" value="Render">
+                        </td>
+                    </tr><tr>
                         <td><label for="iconTop">Top</label></td>
                         <td><input id="iconTop" type="text" value="10" size="5"></td>
                     </tr><tr>
@@ -77,10 +55,6 @@
                     </tr><tr>
                         <td><label for="debugSegments">Segments</label></td>
                         <td><input id="debugSegments" type="checkbox"></td>
-                    </tr><tr>
-                        <td colspan="3">
-                            <input type="button" onclick="drawicon()" value="Render">
-                        </td>
                     </tr>
                 </table>
             </td>
@@ -90,22 +64,70 @@
 
 <script src="ascii-icon.js"></script>
 
+<script
+    src="https://code.jquery.com/jquery-3.0.0.js"
+    integrity="sha256-jrPLZ+8vDxt2FnE1zvZXCkCcebI/C8Dt5xyaQBjxQIo="
+    crossorigin="anonymous"
+></script>
+        
 <script>
+
+$( function() {
+    $( '#vertices' )
+        .keyup( function( ev ) {
+            console.log( ev.keyCode )
+        } )
+
+    adjustHeight()
+} )
+
 function drawicon() {
-    var canvas = document.getElementById('icon');
+    var canvas = $( '#icon' ).get( 0 );
     var ctx = canvas.getContext('2d');    
 
     ctx.clearRect( 0, 0, canvas.width, canvas.height )
 
-    var text = document.getElementById('icontext').value;
+    var text = $( '#vertices' ).val() + '\n\n' + $( '#segments' ).val();
     // console.log( text);
     ctx.drawIcon( text, {
-        left:     Number( document.getElementById('iconLeft').value ), 
-        top:      Number( document.getElementById('iconTop').value ), 
-        width:    Number( document.getElementById('iconWidth').value ), 
-        height:   Number( document.getElementById('iconHeight').value ), 
-        grid:     document.getElementById('debugGrid').checked,
-        segments: document.getElementById('debugSegments').checked,
+        left:     Number( $( '#iconLeft' ).val() ), 
+        top:      Number( $( '#iconTop' ).val() ), 
+        width:    Number( $( '#iconWidth' ).val() ), 
+        height:   Number( $( '#iconHeight' ).val() ), 
+        grid:     $( '#debugGrid' ).prop( 'checked' ),
+        segments: $( '#debugSegments' ).prop( 'checked' ),
     } )
 }
+
+function changeSize() {
+    var gridSize = $( '#gridSize' ).val().split( /,/ );
+    var size = gridSize[ 0 ],
+        mod = gridSize[ 1 ];
+
+    var icon = [];
+    for ( var r = 0; r < size; r++ ) {
+        var row = '';
+        for ( var c = 0; c < size; c++ )
+            row = row + ( ((c + 1) % mod == 0) && ((r + 1) % mod == 0) ? ':' : '.');
+        icon.push( row );
+    }
+
+    $( '#vertices' )
+        .val( icon.join( '\n' ) )
+        .attr( 'rows', size )
+        .attr( 'cols', size )
+
+    adjustHeight();
+}
+
+function adjustHeight() {
+    var h = $( '#vertices' )
+        .height( '5px' )
+        .get( 0 ).scrollHeight;
+
+    $( '#vertices' )
+        .height( h + 'px' )
+}
+
+
 </script>
