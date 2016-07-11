@@ -10,7 +10,17 @@
 </header>
 
 <article>
-    <table width="1%">
+    <label for="gridSize">Size</label></td>
+    <select id="gridSize">
+         <option value="9"  mod="5">9 x 9</option>
+         <option value="11" mod="3">11 x 11</option>
+         <option value="15" mod="4">15 x 15</option>
+         <option value="19" mod="5">19 x 19</option>
+         <option value="23" mod="4">23 x 23</option>
+    <select>
+    <input id="create" type="button" value="Create New">
+
+    <table width="1%">        
         <tr>
             <td width="1%">
                 <div id="paper">
@@ -24,18 +34,8 @@
                 </div>
                 <table>
                     <tr>
-                        <td><label for="gridSize">Size</label></td>
-                        <td>
-                        <select id="gridSize" onchange="changeSize()">
-                             <option value="9,5">9 x 9</option>
-                             <option value="11,3">11 x 11</option>
-                             <option value="15,4">15 x 15</option>
-                             <option value="19,5">19 x 19</option>
-                             <option value="23,4">23 x 23</option>
-                        <select>
-                        </td>
                         <td colspan="3">
-                            <input type="button" onclick="drawicon()" value="Render">
+                            <input id="render" type="button" value="Render">
                         </td>
                     </tr><tr>
                         <td><label for="iconTop">Top</label></td>
@@ -55,6 +55,9 @@
                     </tr><tr>
                         <td><label for="debugSegments">Segments</label></td>
                         <td><input id="debugSegments" type="checkbox"></td>
+                    </tr><tr>
+                        <td><label for="autoRender">Auto-render</label></td>
+                        <td><input id="autoRender" type="checkbox"></td>
                     </tr>
                 </table>
             </td>
@@ -73,61 +76,203 @@
 <script>
 
 $( function() {
-    $( '#vertices' )
-        .keyup( function( ev ) {
-            console.log( ev.keyCode )
-        } )
+    var SNAPSHOT = 'snapshot';
 
-    adjustHeight()
-} )
+    var stateId = {
+        vertices      : stateValue,
+        segments      : stateValue,
+        iconLeft      : stateValue,
+        iconTop       : stateValue,
+        iconWidth     : stateValue,
+        iconHeight    : stateValue,
+        gridSize      : stateValue,        
+        debugGrid     : stateCheckbox,
+        debugSegments : stateCheckbox,
+    };
 
-function drawicon() {
-    var canvas = $( '#icon' ).get( 0 );
-    var ctx = canvas.getContext('2d');    
+    $( '#vertices' ).keyup( verticesKeyup ).click( verticesKeyup )
+    $( '#segments' ).keydown( segmentsKeyup )
+    $( '#create' ).click( changeSize )
+    $( '#render' ).click( drawIcon )
 
-    ctx.clearRect( 0, 0, canvas.width, canvas.height )
+    // var param = parseQueryParameeters();
 
-    var text = $( '#vertices' ).val() + '\n\n' + $( '#segments' ).val();
-    // console.log( text);
-    ctx.drawIcon( text, {
-        left:     Number( $( '#iconLeft' ).val() ), 
-        top:      Number( $( '#iconTop' ).val() ), 
-        width:    Number( $( '#iconWidth' ).val() ), 
-        height:   Number( $( '#iconHeight' ).val() ), 
-        grid:     $( '#debugGrid' ).prop( 'checked' ),
-        segments: $( '#debugSegments' ).prop( 'checked' ),
-    } )
-}
+    // if ( param.text ) {
+    //     var text = param.text.split( '\n\n' )
+    //     $( '#vertices' ).val( text.shift() )
+    //     $( '#segments' ).val( text.join( '\n\n' ))
+    // }
 
-function changeSize() {
-    var gridSize = $( '#gridSize' ).val().split( /,/ );
-    var size = gridSize[ 0 ],
-        mod = gridSize[ 1 ];
+    load( SNAPSHOT );
 
-    var icon = [];
-    for ( var r = 0; r < size; r++ ) {
-        var row = '';
-        for ( var c = 0; c < size; c++ )
-            row = row + ( ((c + 1) % mod == 0) && ((r + 1) % mod == 0) ? ':' : '.');
-        icon.push( row );
+    var gridSize = Number( $( '#gridSize' ).val() );
+    adjustHeight();
+
+    setInterval( function () { save( SNAPSHOT ) }, 1000 );
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    function verticesKeyup( ev ) {
+        var st = ev.target.selectionStart,
+            x = st % (gridSize + 1),
+            y = Math.floor( st / (gridSize + 1) );
+
+        // console.log( ev.keyCode, st, x, y );
+
+        if ( ev.keyCode >= 48 && ev.keyCode <= 192 )
+            st -= 1;
+        else 
+            switch ( ev.keyCode ) {
+            case 40: // down
+                if ( y < (gridSize-1) )
+                    st += gridSize;
+                else 
+                    $( '#segments' ).focus()
+                    // st -= 1;
+                break;
+
+            case 38: // up
+                if ( y > 0 )
+                    st -= gridSize + 1;
+                break;
+
+            case 39: // right
+                if ( x == gridSize )
+                    st -= 1;
+                break;
+
+            case 37: // left
+                if ( x > 0 )
+                    st -= 1;
+                break;
+            }
+
+        ev.target.selectionStart = st;
+        ev.target.selectionEnd = st + 1;
+
+        autoRender();
     }
 
-    $( '#vertices' )
-        .val( icon.join( '\n' ) )
-        .attr( 'rows', size )
-        .attr( 'cols', size )
+    function segmentsKeyup( ev ) {
+        if ( ev.target.selectionStart == 0 && ev.keyCode == 38 )
+            $( '#vertices' ).focus().get( 0 ).selectionStart = (gridSize + 1) * (gridSize - 1);
 
-    adjustHeight();
-}
+        autoRender();
+    }
 
-function adjustHeight() {
-    var h = $( '#vertices' )
-        .height( '5px' )
-        .get( 0 ).scrollHeight;
+    function autoRender() {
+        if ( !$( '#autoRender' ).prop( 'checked' ) ) return;
 
-    $( '#vertices' )
-        .height( h + 'px' )
-}
+        drawIcon();
+    }
 
+    function drawIcon() {
+        var canvas = $( '#icon' ).get( 0 );
+        var ctx = canvas.getContext('2d');    
+
+        ctx.clearRect( 0, 0, canvas.width, canvas.height )
+
+        var text = $( '#vertices' ).val() + '\n\n' + $( '#segments' ).val();
+        // console.log( text);
+        ctx.drawIcon( text, {
+            left:     Number( $( '#iconLeft' ).val() ), 
+            top:      Number( $( '#iconTop' ).val() ), 
+            width:    Number( $( '#iconWidth' ).val() ), 
+            height:   Number( $( '#iconHeight' ).val() ), 
+            grid:     $( '#debugGrid' ).prop( 'checked' ),
+            segments: $( '#debugSegments' ).prop( 'checked' ),
+        } )
+    }
+
+    function changeSize() {
+        var size = $( '#gridSize' ).val(),
+            mod = Number( $( '#gridSize' ).find( ':selected' ).attr( 'mod' ) );
+
+        var icon = [];
+        for ( var r = 0; r < size; r++ ) {
+            var row = '';
+            for ( var c = 0; c < size; c++ )
+                row = row + ( ((c + 1) % mod == 0) && ((r + 1) % mod == 0) ? ':' : '.');
+            icon.push( row );
+        }
+
+        $( '#vertices' )
+            .val( icon.join( '\n' ) )
+            .attr( 'rows', size )
+            .attr( 'cols', size )
+
+        gridSize = size;
+        adjustHeight();
+    }
+
+    function adjustHeight() {
+        var h = $( '#vertices' )
+            .height( '5px' )
+            .get( 0 ).scrollHeight;
+
+        $( '#vertices' )
+            .height( h + 'px' )
+    }
+
+    function parseQueryParameeters() {
+        var s = location.search.substr(1);
+        var ps = s.split( /&/ );
+        var param = {};
+        for ( var i = 0; i < ps.length; i++ ) {
+            var p = ps[ i ].split( /=/ )
+            param[ p[ 0 ] ] = p[ 1 ];
+        }
+        return param;
+    }
+
+    function stateValue( id, value ) {
+        if ( arguments.length == 1 )
+            return $( '#' + id ).val();
+
+        return $( '#' + id ).val( value );        
+    }
+
+    function stateCheckbox( id, checked ) {
+        if ( arguments.length == 1 )
+            return $( '#' + id ).prop( 'checked' );
+
+        return $( '#' + id ).prop( 'checked', !!checked );
+    }
+
+    function stateInternal( id, value ) {
+        if ( arguments.length == 1 )
+            return internal[ id ]
+
+        internal[ id ] = value;
+    }
+
+    function save( name ) {
+        var data = {};
+        $.each( stateId, function ( id, state ) {
+            data[ id ] = state( id )
+        } )
+
+        localStorage.setItem( name, JSON.stringify( data ) );
+        // console.log( 'saved', name )
+    }
+
+    function load( name ) {
+        var json = localStorage.getItem( name );
+        try {
+            var data = JSON.parse( json );
+        }
+        catch( e ) {
+            console.warn( e );
+            return;
+        }
+
+        if ( !data ) return;
+
+        $.each( stateId, function ( id, state ) {
+            state( id, data[ id ] )
+        } )
+        console.log( 'loaded', name )
+    }
+} )
 
 </script>
