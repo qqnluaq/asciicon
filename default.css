@@ -40,6 +40,7 @@ td {
 }
 
 #segments {
+    padding-top: 1em;
     height: 200px;
     resize: none;
 }

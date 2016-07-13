@@ -12,7 +12,7 @@
 <article>
     <label for="gridSize">Size</label></td>
     <select id="gridSize">
-         <option value="9"  mod="5">9 x 9</option>
+         <option value="9"  mod="5" selected>9 x 9</option>
          <option value="11" mod="3">11 x 11</option>
          <option value="15" mod="4">15 x 15</option>
          <option value="19" mod="5">19 x 19</option>
@@ -90,7 +90,7 @@ $( function() {
         debugSegments : stateCheckbox,
     };
 
-    $( '#vertices' ).keyup( verticesKeyup ).click( verticesKeyup )
+    $( '#vertices' ).keydown( verticesKeydown ).keyup( verticesKeyup ).click( verticesKeyup )
     $( '#segments' ).keydown( segmentsKeyup )
     $( '#create' ).click( changeSize )
     $( '#render' ).click( drawIcon )
@@ -103,54 +103,82 @@ $( function() {
     //     $( '#segments' ).val( text.join( '\n\n' ))
     // }
 
-    load( SNAPSHOT );
+    var loaded = load( SNAPSHOT );
 
     var gridSize = Number( $( '#gridSize' ).val() );
-    adjustHeight();
+    var gridMod = Number( $( '#gridSize' ).find( ':selected' ).attr( 'mod' ) );
+    console.log( gridSize, gridMod );
 
-    setInterval( function () { save( SNAPSHOT ) }, 1000 );
+    if ( loaded )
+        adjustHeight();
+    else 
+        createIcon();
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    function verticesKeydown( ev ) {
+        switch ( ev.keyCode ) {
+        case 8:  // backspace
+        case 46: // delete
+            ev.preventDefault()
+            break;
+
+        default:
+            // console.log( 'down', ev.keyCode );
+            return;
+        }
+    }
 
     function verticesKeyup( ev ) {
         var st = ev.target.selectionStart,
             x = st % (gridSize + 1),
             y = Math.floor( st / (gridSize + 1) );
 
-        // console.log( ev.keyCode, st, x, y );
+        if ( ev.keyCode ) {
+            if ( ev.keyCode >= 48 && ev.keyCode <= 192 )
+                st -= 1;
+            else 
+                switch ( ev.keyCode ) {
+                case 40: // down
+                    if ( y < (gridSize-1) )
+                        st += gridSize;
+                    else 
+                        $( '#segments' ).focus()
+                        // st -= 1;
+                    break;
 
-        if ( ev.keyCode >= 48 && ev.keyCode <= 192 )
-            st -= 1;
-        else 
-            switch ( ev.keyCode ) {
-            case 40: // down
-                if ( y < (gridSize-1) )
-                    st += gridSize;
-                else 
-                    $( '#segments' ).focus()
+                case 38: // up
+                    if ( y > 0 )
+                        st -= gridSize + 1;
+                    break;
+
+                case 39: // right
+                    if ( x == gridSize )
+                        st -= 1;
+                    break;
+
+                case 37: // left
+                    if ( x > 0 )
+                        st -= 1;
+                    break;
+
+                case 8:  // backspace
+                case 46: // delete
+                    ev.target.value = ev.target.value.substring(0, st) + placeHolder( x, y ) + ev.target.value.substring(st + 1, ev.target.value.length);
                     // st -= 1;
-                break;
+                    break;
 
-            case 38: // up
-                if ( y > 0 )
-                    st -= gridSize + 1;
-                break;
-
-            case 39: // right
-                if ( x == gridSize )
-                    st -= 1;
-                break;
-
-            case 37: // left
-                if ( x > 0 )
-                    st -= 1;
-                break;
-            }
-
+                default:
+                    console.log( 'up', ev.keyCode );
+                    return;
+                }
+        }
+        // console.log( st, x, y, ev.keyCode );
         ev.target.selectionStart = st;
         ev.target.selectionEnd = st + 1;
 
         autoRender();
+        autoSave();
     }
 
     function segmentsKeyup( ev ) {
@@ -164,6 +192,10 @@ $( function() {
         if ( !$( '#autoRender' ).prop( 'checked' ) ) return;
 
         drawIcon();
+    }
+
+    function autoSave() {
+        save( SNAPSHOT );
     }
 
     function drawIcon() {
@@ -185,23 +217,30 @@ $( function() {
     }
 
     function changeSize() {
-        var size = $( '#gridSize' ).val(),
-            mod = Number( $( '#gridSize' ).find( ':selected' ).attr( 'mod' ) );
+        gridSize = Number( $( '#gridSize' ).val() );
+        gridMod = Number( $( '#gridSize' ).find( ':selected' ).attr( 'mod' ) );
 
+        createIcon();
+    }
+
+    function placeHolder( x, y ) {
+        return ((x + 1) % gridMod == 0) && ((y + 1) % gridMod == 0) ? ':' : '.';
+    }
+
+    function createIcon() {
         var icon = [];
-        for ( var r = 0; r < size; r++ ) {
+        for ( var r = 0; r < gridSize; r++ ) {
             var row = '';
-            for ( var c = 0; c < size; c++ )
-                row = row + ( ((c + 1) % mod == 0) && ((r + 1) % mod == 0) ? ':' : '.');
+            for ( var c = 0; c < gridSize; c++ )
+                row = row + placeHolder( c, r );
             icon.push( row );
         }
 
         $( '#vertices' )
             .val( icon.join( '\n' ) )
-            .attr( 'rows', size )
-            .attr( 'cols', size )
+            .attr( 'rows', gridSize )
+            .attr( 'cols', gridSize )
 
-        gridSize = size;
         adjustHeight();
     }
 
@@ -263,15 +302,16 @@ $( function() {
         }
         catch( e ) {
             console.warn( e );
-            return;
+            return false;
         }
 
-        if ( !data ) return;
+        if ( !data ) return false;
 
         $.each( stateId, function ( id, state ) {
             state( id, data[ id ] )
         } )
         console.log( 'loaded', name )
+        return true;
     }
 } )
 
