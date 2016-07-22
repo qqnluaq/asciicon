@@ -319,6 +319,10 @@ CanvasRenderingContext2D.prototype.pathMethod = {
     stroke: function () {
         this.stroke();
     },
+    paint: function () {
+        this.fill();
+        this.stroke();
+    },
 };
 
 ( function () {
@@ -345,8 +349,10 @@ CanvasRenderingContext2D.prototype.pathMethod = {
 
     function colourStyle( colour ) {
         return function ( styleCtx ) {
+            this.setLineDash( [] );
             this.lineWidth = Math.min( styleCtx.pixelsPerRow, styleCtx.pixelsPerCol )
             this.lineCap = 'round';
+            this.lineJoin = 'round';
             this.strokeStyle = colour;
             this.fillStyle = colour;
         }

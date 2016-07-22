@@ -24,8 +24,8 @@
         <tr>
             <td width="1%">
                 <div id="paper">
-                    <textarea id="vertices"></textarea>
-                    <textarea id="segments"></textarea>
+                    <textarea id="vertices" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+                    <textarea id="segments" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
                 </div>
             </td>
             <td width="1%">
@@ -94,6 +94,8 @@ $( function() {
     $( '#segments' ).keydown( segmentsKeyup )
     $( '#create' ).click( changeSize )
     $( '#render' ).click( drawIcon )
+    $( '#debugGrid,#debugSegments' ).click( autoRender )
+    $( '#iconHeight,#iconWidth,#iconTop,#iconLeft' ).keyup( autoRender )
 
     // var param = parseQueryParameeters();
 
@@ -113,6 +115,8 @@ $( function() {
         adjustHeight();
     else 
         createIcon();
+
+    autoRender();
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -186,6 +190,7 @@ $( function() {
             $( '#vertices' ).focus().get( 0 ).selectionStart = (gridSize + 1) * (gridSize - 1);
 
         autoRender();
+        autoSave();
     }
 
     function autoRender() {
@@ -195,6 +200,7 @@ $( function() {
     }
 
     function autoSave() {
+        // console.log( 'autosave' );
         save( SNAPSHOT );
     }
 
