@@ -2,7 +2,13 @@ body {
     background-color: beige;
 }
 
-#paper {
+#structured {
+    background-color: white;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+#raw {
     background-color: white;
     padding: 10px;
     border-radius: 6px;
@@ -19,6 +25,10 @@ body {
 #icon {
     width: 300px;
     height: 300px;
+}
+
+#iconNames {
+    width: 150px;
 }
 
 textarea {
@@ -43,4 +53,9 @@ td {
     padding-top: 1em;
     height: 200px;
     resize: none;
+}
+
+.iconOption label {
+    display: block;
+    white-space: nowrap;
 }

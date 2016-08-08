@@ -10,54 +10,54 @@
 </header>
 
 <article>
-    <label for="gridSize">Size</label></td>
-    <select id="gridSize">
-         <option value="9"  mod="5" selected>9 x 9</option>
-         <option value="11" mod="3">11 x 11</option>
-         <option value="15" mod="4">15 x 15</option>
-         <option value="19" mod="5">19 x 19</option>
-         <option value="23" mod="4">23 x 23</option>
-    <select>
-    <input id="create" type="button" value="Create New">
+    <input id="render" type="button" value="Render">
+    <input id="save" type="button" value="Save">
+    <input id="file" type="file">
 
+    <label><input id="debugGrid"     type="checkbox" checked>Grid</label>
+    <label><input id="debugSegments" type="checkbox" checked>Segments</label>
+    <label><input id="autoRender"    type="checkbox" checked>Auto-render</label>    
+    
     <table width="1%">        
         <tr>
             <td width="1%">
-                <div id="paper">
+                <div id="structured">
                     <textarea id="vertices" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
                     <textarea id="segments" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
                 </div>
+                <div id="raw">
+                    <textarea id="asciicon" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+                </div>
+                <label><input id="entryStructured" name="entry" type="radio" value="structured" checked>Structured</label>
+                <label><input id="entryRaw"        name="entry" type="radio" value="raw"               >Raw</label>
             </td>
             <td width="1%">
                 <div id="iconFrame">
                     <canvas id="icon" width="300" height="300"></canvas>
                 </div>
                 <table>
-                    <tr>
-                        <td colspan="3">
-                            <input id="render" type="button" value="Render">
+                     <tr>
+                        <td class="iconOption">
+                            <input id="iconName" type="input" size=15>
+                            <label>Top <input id="iconTop" type="text" value="10" size="5"></label>
+                            <label>Left <input id="iconLeft" type="text" value="10" size="5"></label>
+                            <label>Width <input id="iconWidth" type="text" value="200" size="5"></label>
+                            <label>Height <input id="iconHeight" type="text" value="200" size="5"></label>
                         </td>
-                    </tr><tr>
-                        <td><label for="iconTop">Top</label></td>
-                        <td><input id="iconTop" type="text" value="10" size="5"></td>
-                    </tr><tr>
-                        <td><label for="iconLeft">Left</label></td>
-                        <td><input id="iconLeft" type="text" value="10" size="5"></td>
-                    </tr><tr>
-                        <td><label for="iconWidth">Width</label></td>
-                        <td><input id="iconWidth" type="text" value="200" size="5"></td>
-                    </tr><tr>
-                        <td><label for="iconHeight">Height</label></td>
-                        <td><input id="iconHeight" type="text" value="200" size="5"></td>
-                    </tr><tr>
-                        <td><label for="debugGrid">Grid</label></td>
-                        <td><input id="debugGrid" type="checkbox"></td>
-                    </tr><tr>
-                        <td><label for="debugSegments">Segments</label></td>
-                        <td><input id="debugSegments" type="checkbox"></td>
-                    </tr><tr>
-                        <td><label for="autoRender">Auto-render</label></td>
-                        <td><input id="autoRender" type="checkbox"></td>
+                        <td>
+                            <select id="gridSize">
+                                 <option value="9"  mod="5">9 x 9</option>
+                                 <option value="11" mod="3">11 x 11</option>
+                                 <option value="15" mod="4" selected>15 x 15</option>
+                                 <option value="19" mod="5">19 x 19</option>
+                                 <option value="23" mod="4">23 x 23</option>
+                            <select>
+                            <input id="create" type="button" value="Create New">
+                            <br />
+                            <select id="iconNames" size="10"></select>
+                            <input id="delete" type="button" value="Delete">
+                        </td>                            
+                    </tr><tr height="1%">
                     </tr>
                 </table>
             </td>
@@ -66,59 +66,69 @@
 </article>
 
 <script src="ascii-icon.js"></script>
+<script src="iconset.js"></script>
 
 <script
     src="https://code.jquery.com/jquery-3.0.0.js"
     integrity="sha256-jrPLZ+8vDxt2FnE1zvZXCkCcebI/C8Dt5xyaQBjxQIo="
     crossorigin="anonymous"
 ></script>
+
+<script src="download.js"></script>
         
 <script>
 
 $( function() {
-    var SNAPSHOT = 'snapshot';
 
-    var stateId = {
-        vertices      : stateValue,
-        segments      : stateValue,
-        iconLeft      : stateValue,
-        iconTop       : stateValue,
-        iconWidth     : stateValue,
-        iconHeight    : stateValue,
-        gridSize      : stateValue,        
-        debugGrid     : stateCheckbox,
-        debugSegments : stateCheckbox,
-    };
-
-    $( '#vertices' ).keydown( verticesKeydown ).keyup( verticesKeyup ).click( verticesKeyup )
-    $( '#segments' ).keydown( segmentsKeyup )
-    $( '#create' ).click( changeSize )
+    $( '#vertices' ).keydown( verticesKeydown ).keyup( verticesKeyup ).click( verticesKeyup ).on( 'paste', false ).keyup( updateIcon )
+    $( '#segments' ).keydown( segmentsKeyup ).keyup( updateIcon )
+    $( '#create' ).click( createIcon )
     $( '#render' ).click( drawIcon )
     $( '#debugGrid,#debugSegments' ).click( autoRender )
-    $( '#iconHeight,#iconWidth,#iconTop,#iconLeft' ).keyup( autoRender )
+    $( '#iconName,#iconHeight,#iconWidth,#iconTop,#iconLeft' ).keyup( updateIcon ).keyup( autoRender )
+    $( '#entryRaw' ).change( entryRaw )
+    $( '#entryStructured' ).change( entryStructured )
+    $( '#iconNames' ).change( selectIcon )
+    $( '#save' ).click( saveIconset )
 
-    // var param = parseQueryParameeters();
+    var SNAPSHOT = 'snapshot';
 
-    // if ( param.text ) {
-    //     var text = param.text.split( '\n\n' )
-    //     $( '#vertices' ).val( text.shift() )
-    //     $( '#segments' ).val( text.join( '\n\n' ))
-    // }
+    var iconset = new ASCIIcon.IconSet();
 
-    var loaded = load( SNAPSHOT );
+    if ( iconset.load( SNAPSHOT ) ) {
+        console.log( 'loaded ' + SNAPSHOT );
+    }
 
-    var gridSize = Number( $( '#gridSize' ).val() );
-    var gridMod = Number( $( '#gridSize' ).find( ':selected' ).attr( 'mod' ) );
-    console.log( gridSize, gridMod );
+    entryStructured();
+    viewIconset();
+    viewSelectedIcon();
 
-    if ( loaded )
-        adjustHeight();
-    else 
-        createIcon();
-
-    autoRender();
+    adjustHeight();
+    // autoRender();
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    function entryRaw( ev ) {
+        // console.log('entryRaw')
+        
+        $( '#raw' ).show();
+        $( '#structured' ).hide();
+
+        $( '#asciicon' ).val( $( '#vertices' ).val() + '\n\n' + $( '#segments' ).val() );        
+    }
+
+    function entryStructured( ev ) {
+        // console.log('entryStructured')
+
+        $( '#raw' ).hide();
+        $( '#structured' ).show();
+
+        var s = $( '#asciicon' ).val();
+        var i = s.indexOf( '\n\n' );
+
+        $( '#vertices' ).val( s.substr( 0, i ) )
+        $( '#segments' ).val( s.substr( i+1 ) )   
+    }
 
     function verticesKeydown( ev ) {
         switch ( ev.keyCode ) {
@@ -134,9 +144,11 @@ $( function() {
     }
 
     function verticesKeyup( ev ) {
-        var st = ev.target.selectionStart,
-            x = st % (gridSize + 1),
-            y = Math.floor( st / (gridSize + 1) );
+        var icon = iconset.getSelectedIcon(),
+            st = ev.target.selectionStart,
+            size = icon.option.gridSize,
+            x = st % (size + 1),
+            y = Math.floor( st / (size + 1) );
 
         if ( ev.keyCode ) {
             if ( ev.keyCode >= 48 && ev.keyCode <= 192 )
@@ -144,8 +156,8 @@ $( function() {
             else 
                 switch ( ev.keyCode ) {
                 case 40: // down
-                    if ( y < (gridSize-1) )
-                        st += gridSize;
+                    if ( y < (size-1) )
+                        st += size;
                     else 
                         $( '#segments' ).focus()
                         // st -= 1;
@@ -153,11 +165,11 @@ $( function() {
 
                 case 38: // up
                     if ( y > 0 )
-                        st -= gridSize + 1;
+                        st -= size + 1;
                     break;
 
                 case 39: // right
-                    if ( x == gridSize )
+                    if ( x == size )
                         st -= 1;
                     break;
 
@@ -168,7 +180,7 @@ $( function() {
 
                 case 8:  // backspace
                 case 46: // delete
-                    ev.target.value = ev.target.value.substring(0, st) + placeHolder( x, y ) + ev.target.value.substring(st + 1, ev.target.value.length);
+                    ev.target.value = ev.target.value.substring(0, st) + icon.placeHolder( x, y ) + ev.target.value.substring(st + 1, ev.target.value.length);
                     // st -= 1;
                     break;
 
@@ -201,7 +213,7 @@ $( function() {
 
     function autoSave() {
         // console.log( 'autosave' );
-        save( SNAPSHOT );
+        // save( SNAPSHOT );
     }
 
     function drawIcon() {
@@ -210,44 +222,33 @@ $( function() {
 
         ctx.clearRect( 0, 0, canvas.width, canvas.height )
 
-        var text = $( '#vertices' ).val() + '\n\n' + $( '#segments' ).val();
+        var icon = iconset.getSelectedIcon(),            
+            text = icon.vertices + '\n\n' + icon.segments;
+
         // console.log( text);
         ctx.drawIcon( text, {
-            left:     Number( $( '#iconLeft' ).val() ), 
-            top:      Number( $( '#iconTop' ).val() ), 
-            width:    Number( $( '#iconWidth' ).val() ), 
-            height:   Number( $( '#iconHeight' ).val() ), 
+            left:     icon.option.iconLeft, 
+            top:      icon.option.iconTop, 
+            width:    icon.option.iconWidth, 
+            height:   icon.option.iconHeight, 
             grid:     $( '#debugGrid' ).prop( 'checked' ),
             segments: $( '#debugSegments' ).prop( 'checked' ),
         } )
     }
 
-    function changeSize() {
-        gridSize = Number( $( '#gridSize' ).val() );
-        gridMod = Number( $( '#gridSize' ).find( ':selected' ).attr( 'mod' ) );
-
-        createIcon();
-    }
-
-    function placeHolder( x, y ) {
-        return ((x + 1) % gridMod == 0) && ((y + 1) % gridMod == 0) ? ':' : '.';
-    }
-
     function createIcon() {
-        var icon = [];
-        for ( var r = 0; r < gridSize; r++ ) {
-            var row = '';
-            for ( var c = 0; c < gridSize; c++ )
-                row = row + placeHolder( c, r );
-            icon.push( row );
-        }
+        var icon = new ASCIIcon.Icon( iconset.newName(), {
+            gridSize:   Number( $( '#gridSize' ).val()                             ),
+            gridMod:    Number( $( '#gridSize' ).find( ':selected' ).attr( 'mod' ) ),
+            iconLeft:   Number( $( '#iconLeft' ).val()                             ),
+            iconTop:    Number( $( '#iconTop' ).val()                              ),
+            iconWidth:  Number( $( '#iconWidth' ).val()                            ),
+            iconHeight: Number( $( '#iconHeight' ).val()                           ),
+        } );
 
-        $( '#vertices' )
-            .val( icon.join( '\n' ) )
-            .attr( 'rows', gridSize )
-            .attr( 'cols', gridSize )
-
-        adjustHeight();
+        iconset.addIcon( icon );
+        viewSelectedIcon();
+        viewIconset();
     }
 
     function adjustHeight() {
@@ -257,67 +258,70 @@ $( function() {
 
         $( '#vertices' )
             .height( h + 'px' )
+
+        $( '#asciicon' ).height( $( '#segments' ).height() + h + 'px' )
     }
 
-    function parseQueryParameeters() {
-        var s = location.search.substr(1);
-        var ps = s.split( /&/ );
-        var param = {};
-        for ( var i = 0; i < ps.length; i++ ) {
-            var p = ps[ i ].split( /=/ )
-            param[ p[ 0 ] ] = p[ 1 ];
+    function viewSelectedIcon() {
+        var icon = iconset.getSelectedIcon();
+
+        $( '#vertices' )
+            .val( icon.vertices )
+            .attr( 'rows', icon.option.gridSize )
+            .attr( 'cols', icon.option.gridSize )
+
+        $( '#segments' ).val( icon.segments )
+
+        $( '#iconName' ).val( icon.name )
+
+        $( '#iconLeft' ).val( icon.option.iconLeft )
+        $( '#iconTop' ).val( icon.option.iconTop )
+        $( '#iconWidth' ).val( icon.option.iconWidth )
+        $( '#iconHeight' ).val( icon.option.iconHeight )
+    }
+
+    function viewIconset() {
+        $( '#iconNames' )
+            .empty()
+            .append( $.map( iconset.getIcons(), function ( i, j ) {
+                return $( '<option>' )
+                    .text( i.name )
+                    .val( j )
+                    .attr( 'selected', iconset.selected == j )
+            } ) )
+    }
+
+    function updateIcon( ev ) {
+        var id = $( this ).attr( 'id' ),
+            icon = iconset.getSelectedIcon(),
+            val = $( this ).val();
+
+        // console.log( id, val )
+        switch ( id ) {
+        case 'vertices':
+        case 'segments':
+            icon[ id ] = val;
+            break;
+
+        case 'iconName':
+            icon.name = val;
+            viewIconset();
+            break;
+
+        default:
+            icon.option[ id ] = Number(val);
         }
-        return param;
     }
 
-    function stateValue( id, value ) {
-        if ( arguments.length == 1 )
-            return $( '#' + id ).val();
-
-        return $( '#' + id ).val( value );        
+    function selectIcon( ev ) {
+        var i = Number( $( this ).val() );
+        iconset.selectIcon( i );
+        viewSelectedIcon();
+        viewIconset();
     }
 
-    function stateCheckbox( id, checked ) {
-        if ( arguments.length == 1 )
-            return $( '#' + id ).prop( 'checked' );
-
-        return $( '#' + id ).prop( 'checked', !!checked );
-    }
-
-    function stateInternal( id, value ) {
-        if ( arguments.length == 1 )
-            return internal[ id ]
-
-        internal[ id ] = value;
-    }
-
-    function save( name ) {
-        var data = {};
-        $.each( stateId, function ( id, state ) {
-            data[ id ] = state( id )
-        } )
-
-        localStorage.setItem( name, JSON.stringify( data ) );
-        // console.log( 'saved', name )
-    }
-
-    function load( name ) {
-        var json = localStorage.getItem( name );
-        try {
-            var data = JSON.parse( json );
-        }
-        catch( e ) {
-            console.warn( e );
-            return false;
-        }
-
-        if ( !data ) return false;
-
-        $.each( stateId, function ( id, state ) {
-            state( id, data[ id ] )
-        } )
-        console.log( 'loaded', name )
-        return true;
+    function saveIconset( ev ) {
+        iconset.save( SNAPSHOT )
     }
 } )
 
