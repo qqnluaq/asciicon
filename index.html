@@ -17,6 +17,7 @@
     <label><input id="debugGrid"     type="checkbox" checked>Grid</label>
     <label><input id="debugSegments" type="checkbox" checked>Segments</label>
     <label><input id="autoRender"    type="checkbox" checked>Auto-render</label>    
+    <label><input id="autoSave"      type="checkbox" checked>Auto-save</label>    
     
     <table width="1%">        
         <tr>
@@ -123,8 +124,6 @@ $( function() {
     }
 
     function entryRaw( ev ) {
-        // console.log('entryRaw')
-        
         $( '#raw' ).show();
         $( '#structured' ).hide();
 
@@ -132,8 +131,6 @@ $( function() {
     }
 
     function entryStructured( ev ) {
-        // console.log('entryStructured')
-
         $( '#raw' ).hide();
         $( '#structured' ).show();
 
@@ -142,6 +139,8 @@ $( function() {
 
         $( '#vertices' ).val( s.substr( 0, i ) )
         $( '#segments' ).val( s.substr( i+1 ) )   
+
+        autoDelayed();
     }
 
     function verticesKeydown( ev ) {
@@ -200,8 +199,7 @@ $( function() {
 
                 default:
                     console.log( 'up', ev.keyCode );
-                    autoRender();
-                    autoSave();
+                    autoDelayed();
                     return;
                 }
         }
@@ -226,8 +224,10 @@ $( function() {
     }
 
     function autoSave() {
+        if ( !$( '#autoSave' ).prop( 'checked' ) ) return;
+
         // console.log( 'autosave' );
-        // save( SNAPSHOT );
+        saveIconset();
     }
 
     function drawIcon() {
