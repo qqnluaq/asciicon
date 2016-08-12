@@ -54,7 +54,13 @@
             return false;
         }
 
+        data.set = $.map( data.set, function ( icon ) {
+            i = new ASCIIcon.Icon();
+            $.extend( i, icon )
+            return i
+        } )
         $.extend( this, data );
+
         return true;
     }
 

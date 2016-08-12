@@ -84,8 +84,8 @@ $( function() {
     $( '#segments' ).keydown( segmentsKeyup ).keyup( updateIcon )
     $( '#create' ).click( createIcon )
     $( '#render' ).click( drawIcon )
-    $( '#debugGrid,#debugSegments' ).click( autoRender )
-    $( '#iconName,#iconHeight,#iconWidth,#iconTop,#iconLeft' ).keyup( updateIcon ).keyup( autoRender )
+    $( '#debugGrid,#debugSegments' ).click( autoDelayed )
+    $( '#iconName,#iconHeight,#iconWidth,#iconTop,#iconLeft' ).keyup( updateIcon ).keyup( autoDelayed )
     $( '#entryRaw' ).change( entryRaw )
     $( '#entryStructured' ).change( entryStructured )
     $( '#iconNames' ).change( selectIcon )
@@ -102,11 +102,25 @@ $( function() {
     entryStructured();
     viewIconset();
     viewSelectedIcon();
-
     adjustHeight();
-    // autoRender();
+
+    autoDelayed();
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    var autoTimer;
+    function autoDelayed() {
+        if ( autoTimer ) 
+            clearTimeout( autoTimer )
+        
+        autoTimer = setTimeout( autoTask, 200 );
+
+        function autoTask() {
+            autoTimer = null
+            autoRender()
+            autoSave()
+        }
+    }
 
     function entryRaw( ev ) {
         // console.log('entryRaw')
@@ -186,6 +200,8 @@ $( function() {
 
                 default:
                     console.log( 'up', ev.keyCode );
+                    autoRender();
+                    autoSave();
                     return;
                 }
         }
@@ -193,16 +209,14 @@ $( function() {
         ev.target.selectionStart = st;
         ev.target.selectionEnd = st + 1;
 
-        autoRender();
-        autoSave();
+        autoDelayed();
     }
 
     function segmentsKeyup( ev ) {
         if ( ev.target.selectionStart == 0 && ev.keyCode == 38 )
             $( '#vertices' ).focus().get( 0 ).selectionStart = (gridSize + 1) * (gridSize - 1);
 
-        autoRender();
-        autoSave();
+        autoDelayed();
     }
 
     function autoRender() {
@@ -318,6 +332,7 @@ $( function() {
         iconset.selectIcon( i );
         viewSelectedIcon();
         viewIconset();
+        autoDelayed();
     }
 
     function saveIconset( ev ) {
