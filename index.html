@@ -261,8 +261,12 @@ $( function() {
         } );
 
         iconset.addIcon( icon );
+        
         viewSelectedIcon();
         viewIconset();
+        adjustHeight();
+
+        autoDelayed();
     }
 
     function adjustHeight() {
@@ -287,6 +291,8 @@ $( function() {
         $( '#segments' ).val( icon.segments )
 
         $( '#iconName' ).val( icon.name )
+
+        $( '#gridSize' ).val( icon.option.gridSize )
 
         $( '#iconLeft' ).val( icon.option.iconLeft )
         $( '#iconTop' ).val( icon.option.iconTop )
@@ -330,8 +336,11 @@ $( function() {
     function selectIcon( ev ) {
         var i = Number( $( this ).val() );
         iconset.selectIcon( i );
+        
         viewSelectedIcon();
         viewIconset();
+        adjustHeight();
+
         autoDelayed();
     }
 

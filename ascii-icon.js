@@ -294,23 +294,58 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
 
 // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-CanvasRenderingContext2D.prototype.segmentMethod = {
-    line: function ( vs ) {
-        this.moveTo( vs[ 0 ], vs[ 1 ] );
-        for ( var i = 2; i < vs.length ; i+=2 ) 
-            this.lineTo( vs[ i ], vs[ i + 1 ] );
-    },
-    arc: function ( vs ) {
-        this.arcTo( );
-    },
-    circle: function ( vs ) {
-        var r = Math.hypot( vs[ 0 ] - vs[ 2 ], vs[ 1 ] - vs[ 3 ] );
-        this.arc( vs[ 0 ], vs[ 1 ], r, 0, 2 * Math.PI );
-    },
-    rect: function ( vs ) {
-        this.rect( Math.min( vs[ 0 ], vs[ 2 ] ), Math.min( vs[ 1 ], vs[ 3 ] ), Math.abs( vs[ 0 ] - vs[ 2 ] ), Math.abs( vs[ 1 ] - vs[ 3 ] ) );
-    },
-};
+// ( function () {
+
+    CanvasRenderingContext2D.prototype.segmentMethod = {
+        line: function ( vs ) {
+            this.moveTo( vs[ 0 ], vs[ 1 ] );
+            for ( var i = 2; i < vs.length ; i+=2 ) 
+                this.lineTo( vs[ i ], vs[ i + 1 ] );
+        },
+
+        arc: function ( vs ) {
+            var c = threePointCircleCenter( vs ),
+                r = Math.hypot( c[ 0 ] - vs[ 2 ], c[ 1 ] - vs[ 3 ] ),
+                a1 = Math.atan2( vs[ 1 ] - c[ 1 ], vs[ 0 ] - c[ 0 ] ),
+                a2 = Math.atan2( vs[ 5 ] - c[ 1 ], vs[ 4 ] - c[ 0 ] );
+
+            if ( c[2] )
+                this.arc( c[0], c[1], r, a1, a2 )
+            else
+                this.arc( c[0], c[1], r, a2, a1 )
+        },
+        
+        circle: function ( vs ) {
+            var r = Math.hypot( vs[ 0 ] - vs[ 2 ], vs[ 1 ] - vs[ 3 ] );
+
+            this.arc( vs[ 0 ], vs[ 1 ], r, 0, 2 * Math.PI );
+        },
+        
+        rect: function ( vs ) {
+            this.rect( Math.min( vs[ 0 ], vs[ 2 ] ), Math.min( vs[ 1 ], vs[ 3 ] ), Math.abs( vs[ 0 ] - vs[ 2 ] ), Math.abs( vs[ 1 ] - vs[ 3 ] ) );
+        },
+    };
+
+    function threePointCircleCenter( vs ) {
+        var X1 = vs[2] - vs[0],
+            Y1 = vs[3] - vs[1],
+            X2 = vs[4] - vs[0],
+            Y2 = vs[5] - vs[1],
+            Z1 = X1 * X1 + Y1 * Y1,
+            Z2 = X2 * X2 + Y2 * Y2,
+            D  = 2 * (X1 * Y2 - X2 * Y1);
+
+        if ( Math.abs(D) < 1e-9 )
+            throw 'colinear'
+
+        return [
+            ( Z1 * Y2 - Z2 * Y1 ) / D + vs[0],
+            ( X1 * Z2 - X2 * Z1 ) / D + vs[1],
+            D > 0
+        ]
+    }
+
+// } )();
 
 CanvasRenderingContext2D.prototype.pathMethod = {
     fill: function () {
@@ -326,6 +361,7 @@ CanvasRenderingContext2D.prototype.pathMethod = {
 };
 
 ( function () {
+
     CanvasRenderingContext2D.prototype.styleMethod = {
         default: colourStyle( 'black' ),
         black: colourStyle( 'black' ),
@@ -357,4 +393,5 @@ CanvasRenderingContext2D.prototype.pathMethod = {
             this.fillStyle = colour;
         }
     }
+
 } )();
