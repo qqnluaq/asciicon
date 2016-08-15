@@ -324,6 +324,11 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         rect: function ( vs ) {
             this.rect( Math.min( vs[ 0 ], vs[ 2 ] ), Math.min( vs[ 1 ], vs[ 3 ] ), Math.abs( vs[ 0 ] - vs[ 2 ] ), Math.abs( vs[ 1 ] - vs[ 3 ] ) );
         },
+
+        curve: function ( vs ) {
+            this.moveTo( vs[ 0 ], vs[ 1 ] );
+            this.bezierCurveTo( vs[ 2 ], vs[ 3 ], vs[ 4 ], vs[ 5 ], vs[ 6 ], vs[ 7 ] )
+        }
     };
 
     function threePointCircleCenter( vs ) {
