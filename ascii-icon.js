@@ -155,7 +155,7 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
     }
 
     if ( debugSegments )
-        drawSegments( this, segment )
+        drawSegments( this, segment, vertex, styleContext )
 
     this.restore();
 
@@ -199,14 +199,36 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         ctx.fillRect( vs[ 0 ], vs[ 1 ], vs[ 2 ] - vs[ 0 ], vs[ 3 ] - vs[ 1 ] );
     }
 
-    function drawSegments( ctx, segment ) {
+    function drawSegments( ctx, segment, vertex, styleContext ) {
         for ( var sid in segment ) {
             var s = segment[ sid ];
 
             for ( var l = 0; l < 2; l++ ) {
+                if ( ctx.segmentMethod[ s.method + 'Construction' ] ) {
+                    ctx.beginPath();
+                    ctx.styleMethod.debugSegments.call( ctx, l, 2 )
+                    ctx.segmentMethod[ s.method + 'Construction' ].call( ctx, transform( s.vertices, cellCenter ) );                                
+                    ctx.stroke();
+                }
                 ctx.beginPath();
-                ctx.styleMethod.debugSegments.call( ctx, l )
+                ctx.styleMethod.debugSegments.call( ctx, l, 4 )
                 ctx.segmentMethod[ s.method ].call( ctx, transform( s.vertices, cellCenter ) );            
+                ctx.stroke();
+            }
+        }
+
+        var radius = Math.min( styleContext.pixelsPerRow, styleContext.pixelsPerCol ) / 2 - 1;
+
+        for ( var vid in vertex ) {
+            var v = vertex[ vid ];
+
+            for ( var l = 0; l < 2; l++ ) {
+                ctx.beginPath();
+                ctx.styleMethod.debugSegments.call( ctx, l, 2 )
+                var a = transform( [ v.x, v.y ], cellCenter )
+                a.push( radius, 0, 2 * Math.PI )
+                ctx.arc.apply( ctx, a );
+                // ctx.rect.apply( ctx, transform( [ v.x, v.y, 1, 1 ], cellCenter ) );            
                 ctx.stroke();
             }
         }
@@ -314,11 +336,23 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
             else
                 this.arc( c[0], c[1], r, a2, a1 )
         },
+        arcConstruction: function ( vs ) {
+            var c = threePointCircleCenter( vs );
+            for ( i = 0; i < 6; i+=2 ) {
+                this.moveTo( vs[ i ], vs[ i+1 ] );
+                this.lineTo( c[ 0 ], c[ 1 ] );
+
+            }
+        },
         
         circle: function ( vs ) {
             var r = Math.hypot( vs[ 0 ] - vs[ 2 ], vs[ 1 ] - vs[ 3 ] );
 
             this.arc( vs[ 0 ], vs[ 1 ], r, 0, 2 * Math.PI );
+        },
+        circleConstruction: function ( vs ) {
+            this.moveTo( vs[ 0 ], vs[ 1 ] );
+            this.lineTo( vs[ 2 ], vs[ 3 ] );
         },
         
         rect: function ( vs ) {
@@ -328,7 +362,14 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         curve: function ( vs ) {
             this.moveTo( vs[ 0 ], vs[ 1 ] );
             this.bezierCurveTo( vs[ 2 ], vs[ 3 ], vs[ 4 ], vs[ 5 ], vs[ 6 ], vs[ 7 ] )
+        },
+        curveConstruction: function ( vs ) {
+            this.moveTo( vs[ 0 ], vs[ 1 ] );
+            this.lineTo( vs[ 2 ], vs[ 3 ] );
+            this.moveTo( vs[ 4 ], vs[ 5 ] );
+            this.lineTo( vs[ 6 ], vs[ 7 ] );
         }
+
     };
 
     function threePointCircleCenter( vs ) {
@@ -373,7 +414,7 @@ CanvasRenderingContext2D.prototype.pathMethod = {
         white: colourStyle( 'white' ),
         gray:  colourStyle( 'gray' ),
         red:  colourStyle( 'red' ),
-        debugSegments: function ( layer ) {
+        debugSegments: function ( layer, dash ) {
             this.lineWidth = 2;
             this.lineCap = 'butt';
             this.lineJoin = 'bevel';
@@ -382,7 +423,7 @@ CanvasRenderingContext2D.prototype.pathMethod = {
                 this.strokeStyle = 'white';
             }
             else if ( layer == 1 ) {
-                this.setLineDash( [ 4, 4 ] );
+                this.setLineDash( [ dash, dash ] );
                 this.strokeStyle = 'black';
             }
         }
