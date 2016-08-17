@@ -206,12 +206,12 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
             for ( var l = 0; l < 2; l++ ) {
                 if ( ctx.segmentMethod[ s.method + 'Construction' ] ) {
                     ctx.beginPath();
-                    ctx.styleMethod.debugSegments.call( ctx, l, 2 )
+                    ctx.styleMethod.debugSegments.call( ctx, l, 2, 1 )
                     ctx.segmentMethod[ s.method + 'Construction' ].call( ctx, transform( s.vertices, cellCenter ) );                                
                     ctx.stroke();
                 }
                 ctx.beginPath();
-                ctx.styleMethod.debugSegments.call( ctx, l, 4 )
+                ctx.styleMethod.debugSegments.call( ctx, l, 4, 2 )
                 ctx.segmentMethod[ s.method ].call( ctx, transform( s.vertices, cellCenter ) );            
                 ctx.stroke();
             }
@@ -224,7 +224,7 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
 
             for ( var l = 0; l < 2; l++ ) {
                 ctx.beginPath();
-                ctx.styleMethod.debugSegments.call( ctx, l, 2 )
+                ctx.styleMethod.debugSegments.call( ctx, l, 2, 1 )
                 var a = transform( [ v.x, v.y ], cellCenter )
                 a.push( radius, 0, 2 * Math.PI )
                 ctx.arc.apply( ctx, a );
@@ -414,8 +414,8 @@ CanvasRenderingContext2D.prototype.pathMethod = {
         white: colourStyle( 'white' ),
         gray:  colourStyle( 'gray' ),
         red:  colourStyle( 'red' ),
-        debugSegments: function ( layer, dash ) {
-            this.lineWidth = 2;
+        debugSegments: function ( layer, dash, width ) {
+            this.lineWidth = width;
             this.lineCap = 'butt';
             this.lineJoin = 'bevel';
             if ( layer == 0 ) {
