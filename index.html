@@ -131,18 +131,14 @@ $( function() {
         $( '#raw' ).show();
         $( '#structured' ).hide();
 
-        $( '#asciicon' ).val( $( '#vertices' ).val() + '\n\n' + $( '#segments' ).val() );        
+        $( '#asciicon' ).val( iconset.getSelectedIcon().toText() );
     }
 
     function entryStructured( ev ) {
         $( '#raw' ).hide();
         $( '#structured' ).show();
 
-        var s = $( '#asciicon' ).val();
-        var i = s.indexOf( '\n\n' );
-
-        $( '#vertices' ).val( s.substr( 0, i ) )
-        $( '#segments' ).val( s.substr( i+1 ) )   
+        iconset.getSelectedIcon().fromText( $( '#asciicon' ).val() );
 
         autoDelayed();
     }

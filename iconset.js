@@ -122,4 +122,27 @@
         return ((x + 1) % this.option.mod == 0) && ((y + 1) % this.option.mod == 0) ? ':' : '.';
     }
 
+    ASCIIcon.Icon.prototype.toText = function() {
+        return JSON.stringify( this.option ) + '\n\n' + 
+            this.vertices + '\n\n' + 
+            this.segments
+    }
+
+    ASCIIcon.Icon.prototype.fromText = function( text ) {
+        var m = text.match( /^(.+?)\n+([^]+)\n\n+([^]+)$/ )
+        if ( !m ) return false;
+
+        var o;
+        try {
+            o = JSON.parse( m[ 1 ] );
+        } 
+        catch ( e ) {
+            return false
+        }
+
+        this.option = o;
+        this.vertices = m[ 2 ];
+        this.segments = m[ 3 ]
+    }
+
 } )()
