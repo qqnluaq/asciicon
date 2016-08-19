@@ -1,6 +1,6 @@
 ( function() {
 
-    var VERSION = 1;
+    var VERSION = 2;
 
     window.ASCIIcon = {};
 
@@ -9,7 +9,7 @@
     ASCIIcon.IconSet = function( option ) {
         this.VERSION = VERSION;
         this.nextid = 1;
-        this.set = [ new ASCIIcon.Icon( this.newName() ) ];
+        this.set = [ new ASCIIcon.Icon( { name: this.newName() } ) ];
         this.selected = 0;
     }
 
@@ -40,57 +40,86 @@
     }
 
     ASCIIcon.IconSet.prototype.load = function( name ) {
-        var json = localStorage.getItem( name );
         try {
-            var data = JSON.parse( json );
-            if ( !data || !data.VERSION ) return false;
-            if ( data.VERSION != VERSION ) {
-                console.warn( 'wrong version');
-                return false;
-            }
+            var json = localStorage.getItem( name ),
+                data = JSON.parse( json );
+
+            if ( !data ) throw 'no data'
+            if ( !data.VERSION ) throw 'no VERSION'
+
+            return this[ 'constructV' + data.VERSION ]( data )
         }
         catch( e ) {
             console.warn( e );
             return false;
         }
+    }
 
+    ASCIIcon.IconSet.prototype.constructV1 = function( data ) {
         data.set = $.map( data.set, function ( icon ) {
-            i = new ASCIIcon.Icon();
-            $.extend( i, icon )
-            return i
+            return new ASCIIcon.Icon( {
+                    name:   icon.name,
+                    cols:   icon.option.gridSize,
+                    rows:   icon.option.gridSize,
+                    mod:    icon.option.gridMod,
+                    left:   icon.option.iconLeft,
+                    top:    icon.option.iconTop,
+                    width:  icon.option.iconWidth,
+                    height: icon.option.iconHeight,            
+                },
+                icon.vertices,
+                icon.segments
+            );
         } )
+        $.extend( this, data );
+        this.VERSION = VERSION;
+
+        return true;
+    }
+
+    ASCIIcon.IconSet.prototype.constructV2 = function( data ) {
+        data.set = $.map( data.set, function ( icon ) {
+            return new ASCIIcon.Icon( icon.option, icon.vertices, icon.segments );
+        } )
+    
         $.extend( this, data );
 
         return true;
     }
 
+
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    ASCIIcon.Icon = function( name, option ) {
-        this.name = name;
+    ASCIIcon.Icon = function( option, vertices, segments ) {
         this.option = $.extend( {
-            gridSize:   15,
-            gridMod:    4,
-            iconWidth:  200,
-            iconHeight: 200,
-            iconLeft:   0,
-            iconTop:    0,
+            name:   null,
+            cols:   15,
+            rows:   15,
+            mod:    4,
+            left:   null,
+            top:    null,
+            width:  null,
+            height: null,
         }, option || {} );
 
-        var grid = [];
-        for ( var r = 0; r < this.option.gridSize; r++ ) {
-            var row = '';
-            for ( var c = 0; c < this.option.gridSize; c++ )
-                row = row + this.placeHolder( c, r );
-            grid.push( row );
+        if ( !vertices ) {
+            var grid = [];
+            for ( var r = 0; r < this.option.rows; r++ ) {
+                var row = '';
+                for ( var c = 0; c < this.option.cols; c++ )
+                    row = row + this.placeHolder( c, r );
+                grid.push( row );
+            }        
+
+            vertices = grid.join( '\n' );
         }
-        
-        this.vertices = grid.join( '\n' );
-        this.segments = '';
+
+        this.vertices = vertices;
+        this.segments = segments || '';
     }
 
     ASCIIcon.Icon.prototype.placeHolder = function( x, y ) {
-        return ((x + 1) % this.option.gridMod == 0) && ((y + 1) % this.option.gridMod == 0) ? ':' : '.';
+        return ((x + 1) % this.option.mod == 0) && ((y + 1) % this.option.mod == 0) ? ':' : '.';
     }
 
 } )()

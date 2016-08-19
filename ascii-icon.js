@@ -42,34 +42,46 @@
 // fill ABC style2 // fill & stroke poly ABC with colour 
 
 CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
-    var left     = option.left     || 0,
-        top      = option.top      || 0,
-        width    = option.width,
-        height   = option.height,
+    var lines         = icon.trim().split( /\n/ );
+        lineIndex          = 0,
+        vertex        = {},
+        guideRows     = [],
+        guideCols     = [],
+        inlineOption  = {};
         debugGrid     = option.grid     || false,
         debugSegments = option.segments || false;
 
-    var lines  = icon.split( /\n/ );
-        cols   = 0,
-        rows   = 0,
-        vertex = {},
-        i      = 0,
-        guideRows = [],
-        guideCols = [];
+    try {
+        inlineOption = JSON.parse( lines[0] );
+        for ( lineIndex += 1 ; lineIndex < lines.length ; lineIndex++ ) 
+            if ( lines[ lineIndex ] ) break;
+    }
+    catch ( e ) {}
 
+    var name          = inlineOption.name     || option.name     || 0,          
+        cols          = inlineOption.cols     || option.cols,
+        rows          = inlineOption.rows     || option.rows,
+        left          = inlineOption.left     || option.left     || 0,
+        top           = inlineOption.top      || option.top      || 0,
+        width         = inlineOption.width    || option.width    || 200,
+        height        = inlineOption.height   || option.height   || 200;
 
-    for ( ; i < lines.length; i++ ) {
-        var points = lines[ i ].trim().split( /\s*/ );
+    var detectedRows = 0,
+        detectedCols = 0;
+
+    for ( ; lineIndex < lines.length; lineIndex++ ) {
+        var points = lines[ lineIndex ].trim().split( /\s*/ );
         if ( points.length == 0 || (points.length == 1 && !points[ 0 ]) ) {
             break;
         }
 
-        cols = Math.max( cols, points.length );
+        detectedRows += 1;
+        detectedCols = Math.max( detectedCols, points.length );
 
         for ( var j = 0; j < points.length; j++ ) {
             if ( /^[.:#]$/.test( points[ j ] ) ) {
                 if ( points[ j ] == ':' ) {
-                    guideRows[ i ] = true;
+                    guideRows[ lineIndex ] = true;
                     guideCols[ j ] = true;
                 }
                 continue;
@@ -82,14 +94,15 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
 
             vertex[ points[ j ] ] = {
                 x: j,
-                y: i
+                y: lineIndex
             }
         }
     }
-    rows = i;
 
-    if ( !width ) width = cols;
-    if ( !height ) height = rows;
+    if ( !cols ) cols = detectedCols;
+    if ( !rows ) rows = detectedRows;
+    if ( cols != detectedCols || rows != detectedRows )
+        console.warn( 'size of vertex grid different than declaration' )
 
     if ( cols > width )
         throw 'Cannot have more columns than pixel width';
@@ -106,17 +119,17 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
     var segment = {},
         paths = [];
 
-    for ( i++; i < lines.length; i++ ) {
-        var line = lines[ i ].trim();
+    for ( lineIndex++; lineIndex < lines.length; lineIndex++ ) {
+        var line = lines[ lineIndex ].trim();
         if ( !line ) continue;
 
-        var s = parseSegment( i, line, this.segmentMethod );
+        var s = parseSegment( line, lineIndex, this.segmentMethod );
         if ( s ) {
             segment[ s.id ] = s;
             continue;
         }
 
-        var p = parsePath( i, line, this.pathMethod );
+        var p = parsePath( line, lineIndex, this.pathMethod );
         if ( p ) {
             paths.push( p );
             continue;
@@ -163,10 +176,10 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
 
     function transform( vertices, offset ) {
         var vs = [];
-        for ( var i = 0 ; i < vertices.length; i += 2 ) {
+        for ( var line = 0 ; line < vertices.length; line += 2 ) {
             vs.push(
-                left + vertices[ i     ] * pixelsPerCol + offset[ 0 ], 
-                top  + vertices[ i + 1 ] * pixelsPerRow + offset[ 1 ]
+                left + vertices[ line     ] * pixelsPerCol + offset[ 0 ], 
+                top  + vertices[ line + 1 ] * pixelsPerRow + offset[ 1 ]
             );
         }
         return vs;
@@ -178,17 +191,17 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         ctx.strokeStyle = 'gray';
         ctx.beginPath();
         var offset = [ 0, 0 ];
-        for ( var i = 0 ; i <= cols ; i++ ) {
-            if ( guideCols[ i ] )
-                drawGuide( ctx, i, 0, 1, rows )
-            ctx.moveTo.apply( ctx, transform( [ i,    0 ], offset ) )
-            ctx.lineTo.apply( ctx, transform( [ i, rows ], offset ) )
+        for ( var line = 0 ; line <= cols ; line++ ) {
+            if ( guideCols[ line ] )
+                drawGuide( ctx, line, 0, 1, rows )
+            ctx.moveTo.apply( ctx, transform( [ line,    0 ], offset ) )
+            ctx.lineTo.apply( ctx, transform( [ line, rows ], offset ) )
         }
-        for ( var i = 0 ; i <= rows ; i++ ) {
-            if ( guideRows[ i ] )
-                drawGuide( ctx, 0, i, cols, 1 )
-            ctx.moveTo.apply( ctx, transform( [ 0,    i ], offset ) )
-            ctx.lineTo.apply( ctx, transform( [ cols, i ], offset ) )
+        for ( var line = 0 ; line <= rows ; line++ ) {
+            if ( guideRows[ line ] )
+                drawGuide( ctx, 0, line, cols, 1 )
+            ctx.moveTo.apply( ctx, transform( [ 0,    line ], offset ) )
+            ctx.lineTo.apply( ctx, transform( [ cols, line ], offset ) )
         }
         ctx.stroke();
     }
@@ -234,7 +247,7 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         }
     }
 
-    function parseSegment( i, line, segmentMethod ) {
+    function parseSegment( line, index, segmentMethod ) {
         var m = line.match( /^(\S)\s+(\S+)\s+(.+)$/ );
         if ( !m )
             return;
@@ -250,7 +263,7 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         }
 
         if ( !segmentMethod[ method ] ) {
-            console.log( 'segment line method invalid: ' + (i + 1) + ': "' + line + '"' );
+            console.log( 'segment line method invalid: ' + (index + 1) + ': "' + line + '"' );
             return;
         }
 
@@ -265,7 +278,7 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         }
 
         if ( vertices.length == 0 ) {
-            console.log( 'segment line invalid, no vertices defined: ' + (i + 1) + ': "' + line + '"' );
+            console.log( 'segment line invalid, no vertices defined: ' + (index + 1) + ': "' + line + '"' );
             return;
         }
 
@@ -276,7 +289,7 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         }
     }
 
-    function parsePath( i, line, pathMethod ) {
+    function parsePath( line, index, pathMethod ) {
         var m = line.match( /^(\S+)\s+(\S+)(.*)$/ );
         if ( !m )
             return;
@@ -287,7 +300,7 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
             segments   = [];
 
         if ( !pathMethod[ method ] ) {
-            console.log( 'path line method invalid: ' + (i + 1) + ': "' + line + '"' );
+            console.log( 'path line method invalid: ' + (index + 1) + ': "' + line + '"' );
             return;   
         }
             
@@ -302,7 +315,7 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         }
 
         if ( segments.length == 0 ) {
-            console.log( 'path line invalid, no segments defined: ' + (i + 1) + ': "' + line + '"' );
+            console.log( 'path line invalid, no segments defined: ' + (index + 1) + ': "' + line + '"' );
             return;
         }        
 
@@ -321,8 +334,8 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
     CanvasRenderingContext2D.prototype.segmentMethod = {
         line: function ( vs ) {
             this.moveTo( vs[ 0 ], vs[ 1 ] );
-            for ( var i = 2; i < vs.length ; i+=2 ) 
-                this.lineTo( vs[ i ], vs[ i + 1 ] );
+            for ( var line = 2; line < vs.length ; line+=2 ) 
+                this.lineTo( vs[ line ], vs[ line + 1 ] );
         },
 
         arc: function ( vs ) {
@@ -338,8 +351,8 @@ CanvasRenderingContext2D.prototype.drawIcon = function ( icon, option ) {
         },
         arcConstruction: function ( vs ) {
             var c = threePointCircleCenter( vs );
-            for ( i = 0; i < 6; i+=2 ) {
-                this.moveTo( vs[ i ], vs[ i+1 ] );
+            for ( line = 0; line < 6; line+=2 ) {
+                this.moveTo( vs[ line ], vs[ line+1 ] );
                 this.lineTo( c[ 0 ], c[ 1 ] );
 
             }

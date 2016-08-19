@@ -1,5 +1,6 @@
 body {
     background-color: beige;
+    font-family: sans-serif;
 }
 
 #structured {
@@ -39,7 +40,7 @@ textarea {
 }
 
 td {
-    vertical-align: top;
+    vertical-align: bottom;
 }
 
 #vertices {
@@ -55,7 +56,28 @@ td {
     resize: none;
 }
 
-.iconOption label {
-    display: block;
-    white-space: nowrap;
+#drawing td {
+    vertical-align: top;
 }
+
+#iconOption td {
+    vertical-align: bottom;
+}
+
+#iconOption label {
+    display:  inline-block;
+    font-size: 12px;
+    /*white-space: nowrap;*/
+}
+
+#iconOption label input {
+    display: block;
+    /*white-space: nowrap;*/
+}
+
+#iconOption label select {
+    display: block;
+    height: 22px;
+    /*white-space: nowrap;*/
+}
+

@@ -10,19 +10,34 @@
 </header>
 
 <article>
-    <input id="render" type="button" value="Render">
-    <input id="save" type="button" value="Save">
-    <input id="file" type="file">
-
-    <label><input id="debugGrid"     type="checkbox" checked>Grid</label>
-    <label><input id="debugSegments" type="checkbox" checked>Segments</label>
-    <label><input id="autoRender"    type="checkbox" checked>Auto-render</label>    
-    <label><input id="autoSave"      type="checkbox" checked>Auto-save</label>    
-    
-    <table width="1%">        
+    <table id="drawing">        
         <tr>
-            <td width="1%">
+            <td>
                 <div id="structured">
+                    <table id="iconOption">
+                         <tr>
+                            <td>
+                                <label>Name <input id="iconName" type="input" size="10"></label>
+                            </td><td>
+                                <label>Size <select id="gridSize">
+                                     <option value="9"  mod="5">9 x 9</option>
+                                     <option value="11" mod="3">11 x 11</option>
+                                     <option value="15" mod="4" selected>15 x 15</option>
+                                     <option value="19" mod="5">19 x 19</option>
+                                     <option value="23" mod="4">23 x 23</option>
+                                </select></label>
+                            </td><td>
+                                <label>Top <input id="iconTop" type="text" value="10" size="3"></label>
+                            </td><td>
+                                <label>Left <input id="iconLeft" type="text" value="10" size="3"></label>
+                            </td><td>
+                                <label>Width <input id="iconWidth" type="text" value="200" size="3"></label>
+                            </td><td>
+                                <label>Height <input id="iconHeight" type="text" value="200" size="3"></label>
+                            </td>
+                        </tr>
+                    </table>
+                    
                     <textarea id="vertices" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
                     <textarea id="segments" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
                 </div>
@@ -32,38 +47,27 @@
                 <label><input id="entryStructured" name="entry" type="radio" value="structured" checked>Structured</label>
                 <label><input id="entryRaw"        name="entry" type="radio" value="raw"               >Raw</label>
             </td>
-            <td width="1%">
+            <td>
                 <div id="iconFrame">
                     <canvas id="icon" width="300" height="300"></canvas>
                 </div>
-                <table>
-                     <tr>
-                        <td class="iconOption">
-                            <input id="iconName" type="input" size=15>
-                            <label>Top <input id="iconTop" type="text" value="10" size="5"></label>
-                            <label>Left <input id="iconLeft" type="text" value="10" size="5"></label>
-                            <label>Width <input id="iconWidth" type="text" value="200" size="5"></label>
-                            <label>Height <input id="iconHeight" type="text" value="200" size="5"></label>
-                        </td>
-                        <td>
-                            <select id="gridSize">
-                                 <option value="9"  mod="5">9 x 9</option>
-                                 <option value="11" mod="3">11 x 11</option>
-                                 <option value="15" mod="4" selected>15 x 15</option>
-                                 <option value="19" mod="5">19 x 19</option>
-                                 <option value="23" mod="4">23 x 23</option>
-                            <select>
-                            <input id="create" type="button" value="Create New">
-                            <br />
-                            <select id="iconNames" size="10"></select>
-                            <input id="delete" type="button" value="Delete">
-                        </td>                            
-                    </tr><tr height="1%">
-                    </tr>
-                </table>
+                <input id="create" type="button" value="Create New">
+                <input id="delete" type="button" value="Delete">
+                <br />
+                <select id="iconNames" size="10"></select>
             </td>
         </tr>
     </table>
+
+    <input id="render" type="button" value="Render">
+    <input id="save" type="button" value="Save">
+    <input id="file" type="file">
+
+    <label><input id="debugGrid"     type="checkbox" checked>Grid</label>
+    <label><input id="debugSegments" type="checkbox" checked>Segments</label>
+    <label><input id="autoRender"    type="checkbox" checked>Auto-render</label>    
+    <label><input id="autoSave"      type="checkbox" checked>Auto-save</label>    
+
 </article>
 
 <script src="ascii-icon.js"></script>
@@ -92,7 +96,7 @@ $( function() {
     $( '#iconNames' ).change( selectIcon )
     $( '#save' ).click( saveIconset )
 
-    var SNAPSHOT = 'snapshot';
+    var SNAPSHOT = 'snapshot2';
 
     var iconset = new ASCIIcon.IconSet();
 
@@ -159,9 +163,10 @@ $( function() {
     function verticesKeyup( ev ) {
         var icon = iconset.getSelectedIcon(),
             st = ev.target.selectionStart,
-            size = icon.option.gridSize,
+            size = icon.option.rows,
             x = st % (size + 1),
             y = Math.floor( st / (size + 1) );
+        console.log( '>'+st  );
 
         if ( ev.keyCode ) {
             if ( ev.keyCode >= 48 && ev.keyCode <= 192 )
@@ -203,7 +208,7 @@ $( function() {
                     return;
                 }
         }
-        // console.log( st, x, y, ev.keyCode );
+        console.log( st );
         ev.target.selectionStart = st;
         ev.target.selectionEnd = st + 1;
 
@@ -211,8 +216,11 @@ $( function() {
     }
 
     function segmentsKeyup( ev ) {
+        var icon = iconset.getSelectedIcon(),
+            size = icon.option.rows;
+
         if ( ev.target.selectionStart == 0 && ev.keyCode == 38 )
-            $( '#vertices' ).focus().get( 0 ).selectionStart = (gridSize + 1) * (gridSize - 1);
+            $( '#vertices' ).focus().get( 0 ).selectionStart = (size + 1) * (size - 1);
 
         autoDelayed();
     }
@@ -240,24 +248,22 @@ $( function() {
             text = icon.vertices + '\n\n' + icon.segments;
 
         // console.log( text);
-        ctx.drawIcon( text, {
-            left:     icon.option.iconLeft, 
-            top:      icon.option.iconTop, 
-            width:    icon.option.iconWidth, 
-            height:   icon.option.iconHeight, 
+        ctx.drawIcon( text, $.extend( {
             grid:     $( '#debugGrid' ).prop( 'checked' ),
             segments: $( '#debugSegments' ).prop( 'checked' ),
-        } )
+        }, icon.option ) )
     }
 
     function createIcon() {
-        var icon = new ASCIIcon.Icon( iconset.newName(), {
-            gridSize:   Number( $( '#gridSize' ).val()                             ),
-            gridMod:    Number( $( '#gridSize' ).find( ':selected' ).attr( 'mod' ) ),
-            iconLeft:   Number( $( '#iconLeft' ).val()                             ),
-            iconTop:    Number( $( '#iconTop' ).val()                              ),
-            iconWidth:  Number( $( '#iconWidth' ).val()                            ),
-            iconHeight: Number( $( '#iconHeight' ).val()                           ),
+        var icon = new ASCIIcon.Icon( {
+            name:   iconset.newName(), 
+            rows:   Number( $( '#gridSize' ).val()                             ),
+            cols:   Number( $( '#gridSize' ).val()                             ),
+            mod:    Number( $( '#gridSize' ).find( ':selected' ).attr( 'mod' ) ),
+            left:   Number( $( '#iconLeft' ).val()                             ),
+            top:    Number( $( '#iconTop' ).val()                              ),
+            width:  Number( $( '#iconWidth' ).val()                            ),
+            height: Number( $( '#iconHeight' ).val()                           ),
         } );
 
         iconset.addIcon( icon );
@@ -285,19 +291,19 @@ $( function() {
 
         $( '#vertices' )
             .val( icon.vertices )
-            .attr( 'rows', icon.option.gridSize )
-            .attr( 'cols', icon.option.gridSize )
+            .attr( 'rows', icon.option.rows )
+            .attr( 'cols', icon.option.cols )
 
         $( '#segments' ).val( icon.segments )
 
-        $( '#iconName' ).val( icon.name )
+        $( '#iconName' ).val( icon.option.name )
 
-        $( '#gridSize' ).val( icon.option.gridSize )
+        $( '#gridSize' ).val( icon.option.rows )
 
-        $( '#iconLeft' ).val( icon.option.iconLeft )
-        $( '#iconTop' ).val( icon.option.iconTop )
-        $( '#iconWidth' ).val( icon.option.iconWidth )
-        $( '#iconHeight' ).val( icon.option.iconHeight )
+        $( '#iconLeft' ).val( icon.option.left )
+        $( '#iconTop' ).val( icon.option.top )
+        $( '#iconWidth' ).val( icon.option.width )
+        $( '#iconHeight' ).val( icon.option.height )
     }
 
     function viewIconset() {
@@ -305,7 +311,7 @@ $( function() {
             .empty()
             .append( $.map( iconset.getIcons(), function ( i, j ) {
                 return $( '<option>' )
-                    .text( i.name )
+                    .text( i.option.name )
                     .val( j )
                     .attr( 'selected', iconset.selected == j )
             } ) )
@@ -324,12 +330,30 @@ $( function() {
             break;
 
         case 'iconName':
-            icon.name = val;
+            icon.option.name = val;
             viewIconset();
             break;
 
-        default:
-            icon.option[ id ] = Number(val);
+        case 'gridSize':
+            icon.option.rows = Number(val);
+            icon.option.cols = Number(val);
+            break;
+
+        case 'iconLeft':
+            icon.option.left = Number(val);
+            break;
+
+        case 'iconTop':
+            icon.option.top = Number(val);
+            break;
+
+        case 'iconWidth':
+            icon.option.width = Number(val);
+            break;
+
+        case 'iconHeight':
+            icon.option.height = Number(val);
+            break;
         }
     }
 
