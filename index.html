@@ -85,7 +85,7 @@
 
 $( function() {
 
-    $( '#vertices' ).keydown( verticesKeydown ).keyup( verticesKeyup ).click( verticesKeyup ).on( 'paste', false ).keyup( updateIcon )
+    $( '#vertices' ).keydown( verticesKeydown ).keypress( verticesKeypress ).click( verticesKeydown ).on( 'paste', false ).keyup( updateIcon )
     $( '#segments' ).keydown( segmentsKeyup ).keyup( updateIcon )
     $( '#create' ).click( createIcon )
     $( '#render' ).click( drawIcon )
@@ -144,81 +144,111 @@ $( function() {
     }
 
     function verticesKeydown( ev ) {
+        var icon = iconset.getSelectedIcon(),
+            rows = icon.option.rows,
+            cols = icon.option.cols,
+            st   = ev.target.selectionStart,
+            x    = st % (cols + 1),
+            y    = Math.floor( st / (cols + 1) );
+
+        console.log( 'keydown', ev.charCode );
+
         switch ( ev.keyCode ) {
         case 8:  // backspace
         case 46: // delete
-            ev.preventDefault()
+            putVertex( x, y, icon.placeHolder( x, y ) )
+            autoDelayed();
+            break;
+
+        case 40: // down
+            if ( y < (rows - 1) )
+                y += 1;
+            else {
+                var s = $( '#segments' ).get( 0 )
+                s.focus();
+                s.selectionStart = 0;
+                s.selectionEnd = 0;
+            }
+            break;
+
+        case 38: // up
+            if ( y > 0 )
+                y -= 1;
+            break;
+
+        case 39: // right
+            if ( x < (cols - 1) )
+                x += 1;
+            break;
+
+        case 37: // left
+            if ( x > 0 )
+                x -= 1;
+            break;
+
+        case undefined:
             break;
 
         default:
-            // console.log( 'down', ev.keyCode );
             return;
         }
+
+        ev.preventDefault();
+        selectVertex( x, y );
     }
 
-    function verticesKeyup( ev ) {
+    function verticesKeypress( ev ) {
         var icon = iconset.getSelectedIcon(),
-            st = ev.target.selectionStart,
-            size = icon.option.rows,
-            x = st % (size + 1),
-            y = Math.floor( st / (size + 1) );
-        console.log( '>'+st  );
+            rows = icon.option.rows,
+            cols = icon.option.cols,
+            st   = ev.target.selectionStart,
+            x    = st % (cols + 1),
+            y    = Math.floor( st / (cols + 1) );
 
-        if ( ev.keyCode ) {
-            if ( ev.keyCode >= 48 && ev.keyCode <= 192 )
-                st -= 1;
-            else 
-                switch ( ev.keyCode ) {
-                case 40: // down
-                    if ( y < (size-1) )
-                        st += size;
-                    else 
-                        $( '#segments' ).focus()
-                        // st -= 1;
-                    break;
+        console.log( 'keypress', ev.which );
 
-                case 38: // up
-                    if ( y > 0 )
-                        st -= size + 1;
-                    break;
+        if ( !ev.which || ev.shiftKey || ev.ctrlKey || ev.altKey || ev.metaKey ) 
+            return;
 
-                case 39: // right
-                    if ( x == size )
-                        st -= 1;
-                    break;
-
-                case 37: // left
-                    if ( x > 0 )
-                        st -= 1;
-                    break;
-
-                case 8:  // backspace
-                case 46: // delete
-                    ev.target.value = ev.target.value.substring(0, st) + icon.placeHolder( x, y ) + ev.target.value.substring(st + 1, ev.target.value.length);
-                    // st -= 1;
-                    break;
-
-                default:
-                    console.log( 'up', ev.keyCode );
-                    autoDelayed();
-                    return;
-                }
+        if ( ev.which >= 48 && ev.which <= 192 ) {
+            ev.preventDefault();
+            putVertex( x, y, String.fromCharCode( ev.charCode ) )
+            selectVertex( x, y );
+            autoDelayed();
         }
-        console.log( st );
-        ev.target.selectionStart = st;
-        ev.target.selectionEnd = st + 1;
-
-        autoDelayed();
     }
 
     function segmentsKeyup( ev ) {
         var icon = iconset.getSelectedIcon(),
-            size = icon.option.rows;
+            rows = icon.option.rows;
 
-        if ( ev.target.selectionStart == 0 && ev.keyCode == 38 )
-            $( '#vertices' ).focus().get( 0 ).selectionStart = (size + 1) * (size - 1);
+        if ( ev.target.selectionStart == 0 && ev.keyCode == 38 ) {
+            $( '#vertices' ).focus();
+            setTimeout( function () { selectVertex( 0, rows - 1 ) }, 100 );
+        }
 
         autoDelayed();
+    }
+
+    function selectVertex( x, y ) {
+        var icon = iconset.getSelectedIcon(),
+            rows = icon.option.rows,
+            cols = icon.option.cols,
+            st   = ( cols + 1 ) * y + x,
+            v    = $( '#vertices' ).get( 0 );
+
+        v.selectionStart = st;
+        v.selectionEnd   = st + 1;
+    }
+
+    function putVertex( x, y, ch ) {
+        var icon = iconset.getSelectedIcon(),
+            rows = icon.option.rows,
+            cols = icon.option.cols,
+            st   = ( cols + 1 ) * y + x,
+            v    = $( '#vertices' ).val();
+
+        $( '#vertices' ).val( v.substring( 0, st ) + ch + v.substring( st + 1, v.length ) )
     }
 
     function autoRender() {
@@ -230,7 +260,6 @@ $( function() {
     function autoSave() {
         if ( !$( '#autoSave' ).prop( 'checked' ) ) return;
 
-        // console.log( 'autosave' );
         saveIconset();
     }
 
