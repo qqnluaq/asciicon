@@ -151,7 +151,12 @@ $( function() {
             x    = st % (cols + 1),
             y    = Math.floor( st / (cols + 1) );
 
-        console.log( 'keydown', ev.charCode );
+        // console.log( 'keydown', ev.which, ev.shiftKey );
+
+        if ( ev.shiftKey ) {
+            var under = getVertex( x, y );
+            var ox = x, oy = y;
+        }
 
         switch ( ev.keyCode ) {
         case 8:  // backspace
@@ -168,6 +173,7 @@ $( function() {
                 s.focus();
                 s.selectionStart = 0;
                 s.selectionEnd = 0;
+                return;
             }
             break;
 
@@ -193,6 +199,12 @@ $( function() {
             return;
         }
 
+        if ( ev.shiftKey ) {
+            putVertex( ox, oy, icon.placeHolder( ox, oy ) )
+            putVertex( x, y, under )
+            autoDelayed();
+        }
+
         ev.preventDefault();
         selectVertex( x, y );
     }
@@ -205,7 +217,7 @@ $( function() {
             x    = st % (cols + 1),
             y    = Math.floor( st / (cols + 1) );
 
-        console.log( 'keypress', ev.which );
+        // console.log( 'keypress', ev.which );
 
         if ( !ev.which || ev.shiftKey || ev.ctrlKey || ev.altKey || ev.metaKey ) 
             return;
@@ -249,6 +261,16 @@ $( function() {
             v    = $( '#vertices' ).val();
 
         $( '#vertices' ).val( v.substring( 0, st ) + ch + v.substring( st + 1, v.length ) )
+    }
+
+    function getVertex( x, y ) {
+        var icon = iconset.getSelectedIcon(),
+            rows = icon.option.rows,
+            cols = icon.option.cols,
+            st   = ( cols + 1 ) * y + x,
+            v    = $( '#vertices' ).val();
+
+        return v.substring( st, st + 1 )
     }
 
     function autoRender() {
