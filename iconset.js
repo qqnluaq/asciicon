@@ -120,7 +120,7 @@
 
     ASCIIcon.Icon.prototype.placeHolder = function( x, y ) {
         return ((x + 1) % this.option.mod == 0) && ((y + 1) % this.option.mod == 0) ? ':' : '.';
-    }
+    }    
 
     ASCIIcon.Icon.prototype.toText = function() {
         return JSON.stringify( this.option ) + '\n\n' + 

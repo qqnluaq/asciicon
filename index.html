@@ -200,9 +200,13 @@ $( function() {
         }
 
         if ( ev.shiftKey ) {
-            putVertex( ox, oy, icon.placeHolder( ox, oy ) )
+            putVertex( ox, oy, icon.prevContent || icon.placeHolder( ox, oy ) )
+            icon.prevContent = getVertex( x, y );
             putVertex( x, y, under )
             autoDelayed();
+        }
+        else {
+            icon.prevContent = null;
         }
 
         ev.preventDefault();
